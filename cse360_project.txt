@@ -1,0 +1,231 @@
+; Quick Sort Implementation for 8085 Microprocessor
+; Array starts at memory location 2000H
+; Array output at memory location 2100H
+; Array length is 31H (49 in decimal)
+
+	JMP START	; Jump to the start of the main program
+
+; Random Number Generation
+
+number:	EQU 76h		;input to generate numbers
+first:	DB 00h		; Starting index of the array for Quick Sort
+pivot:	DB 00h		; Starting index of the array for Quick Sort
+last:	DB 31h		; Ending index of the array for Quick Sort
+i:	DB 00h
+j:	DB 31h
+temp:	DB 00h		; Temporary storage for swapping
+
+START:  NOP		; No operation, used for alignment
+
+	MVI a, number	; Load the NUMBER constant into A
+	MVI c, 00h	; Clear register C
+
+	MOV b, a		; Copy A to B
+	RLC		; Rotate left through carry
+	XRA b		; Exclusive OR A with B
+	LXI h, 2000h	; Load address 2000H into HL
+	MOV b, a	; Copy A to B
+
+;loop for generating numbers
+RNG:	MOV m, b		; Store B into memory at address HL
+	MOV a, b		; Copy B to A
+	INX h		; Increment HL to point to the next memory location
+	INR c		; Increment C
+	RAR		; Rotate right through carry
+
+	XRA b		; Exclusive OR A with B
+	MOV b, a		; Copy A to B
+	MOV a, c		; Copy C to A
+	CPI 31h		; Compare A with 31H
+	JNZ RNG		; Jump to RNG if A is not equal to 31H
+	MOV m, b		; Store B into memory at address HL
+
+	MVI a, 00h	; Clear A
+	MVI c, 31h	; Load 31H into C
+	LXI h, 2100h	; Load address 2100H into HL
+	XCHG		; Exchange DE and HL (DE now has 2000H)
+	LXI h, 2000h	; Load address 2000H into HL
+
+; Move numbers to 2100H
+
+MOVE:	INR a		; Increment A
+	MOV b, m	; Load value from memory at HL into B
+	INX h		; Increment HL
+	XCHG		; Exchange DE and HL
+	MOV m, b	; Store B into memory at DE
+	INX h		; Increment HL
+	XCHG		; Exchange DE and HL
+	CMP c		; Compare A with C
+	JNZ MOVE	; Jump to MOVE if A is not equal to C
+	MOV b, m	; Load value from memory at HL into B
+	XCHG		; Exchange DE and HL
+	MOV m, b	; Store B into memory at DE
+
+
+; Quick Sort Algorithm
+; First call
+
+	LDA first 	;a=first
+	LXI h, last 
+	MOV c, m 	;c=last
+
+;call quicksort
+	CALL quicksort
+
+	HLT		; Halt the program
+
+
+quicksort: CMP c	; Compare A with C
+	JNC NOSORT	; Jump to NOSORT if A is not less than C
+	STA pivot	;pivot=first (Store A into PIVOT)
+	STA i		;i=first
+	STA first
+	LXI h, j	; Load address of J into HL
+	MOV m, c	;j=last
+	LXI h, last	; Load address of J into HL
+	MOV m, c	; Store C into memory at HL
+
+; While (i<j)
+
+JMP MainCondition	; Jump to MainCondition
+
+MainWhile: JMP While1Condition1
+
+While1: INR a		; Increment A
+	STA i		; Store A into I
+
+While1Condition1: LXI h, pivot	; Load address of PIVOT into HL
+	MOV c,m		; Load value from memory at HL into C
+	MOV l,c		; Copy C to L
+	MVI h,21h	; Load 21H into H
+	MOV b,m		; number[pivot]=B   [Load value from memory at 21H into B (NUMBER[PIVOT])]
+	LXI h,i		; Load address of i into HL
+	MOV c,m		; Load value from memory at HL into C
+	MOV l,c		; Copy C to L
+	MVI h,21h	; Load 21H into H
+	MOV a,m		;number[i]=A [Load value from memory at 21H into A (NUMBER[I])]
+	CMP b		; Compare A with B
+	JZ While1Condition2	; Jump to While1Condition2 if A equals B
+	JC While1Condition2	; Jump to While1Condition2 if carry (A < B)
+	JNC CheckWhile2		; Jump to CheckWhile2 if no carry (A >= B)
+
+While1Condition2: LDA i		;A=i [Load I into A]
+	LXI h,last	; Load address of LAST into HL
+	MOV b,m		; Load value from memory at HL into B
+	CMP b		; Compare A with B
+	JC While1	; Jump to While1 if carry (A < B)
+
+
+CheckWhile2: JMP While2Condition
+
+While2:	LDA j	; Load J into A
+	DCR a	; Decrement A
+	STA j	; Store A into J
+
+While2Condition: LXI h, pivot	; Load address of PIVOT into HL
+	MOV c, m	; Load value from memory at HL into C
+	MOV l, c	; Copy C to L
+	MVI h, 21h	; Load 21H into H
+	MOV b, m	; number[pivot]=B [Load value from memory at 21H into B (NUMBER[PIVOT])]
+	LXI h, j	; Load address of J into HL
+	MOV c, m	; Load value from memory at HL into C
+	MOV l, c	; Copy C to L
+	MVI h, 21h	; Load 21H into H
+	MOV a, m	;number[j]=A [Load value from memory at 21H into A (NUMBER[J])]
+	CMP b		; Compare A with B
+	JZ IF		; Jump to IF if A equals B
+	JNC While2	; Jump to While2 if no carry (A >= B)
+
+
+;if(i<j)
+
+IF:	LDA i		; Load I into A
+	LXI h, j	; Load address of J into HL
+	MOV b, m	; Load value from memory at HL into B
+	CMP b		; Compare A with B
+	JNC MainCondition	; Jump to MainCondition if no carry (A >= B)
+
+;temp = number[i]
+	LDA i		; Load I into A
+	MOV l, a	; Copy A to L
+	MVI h, 21h	; Load 21H into H
+	MOV b, m	;number[i]=b [Load value from memory at 21H into B (NUMBER[I])]
+	LXI h, temp	; Load address of TEMP into HL
+	MOV m, b	;b=temp=number[i] [Store B into memory at HL (TEMP = NUMBER[I])]
+
+;number[i]=number[j]
+
+	LXI h, j	; Load address of J into HL
+	MOV c, m	; Load value from memory at HL into C
+	MOV l, c	; Copy C to L
+	MVI h, 21h	; Load 21H into H
+	MOV c, m	;c=number[j] [Load value from memory at 21H into C (NUMBER[J])]
+	LDA i		; Load I into A
+	MOV l, a	; Copy A to L
+	MVI h, 21h	; Load 21H into H
+	MOV m, c	; Store C into memory at HL (NUMBER[I] = NUMBER[J])
+
+;number[j]=temp
+
+	LXI h, j	; Load address of J into HL
+	MOV c, m	; Load value from memory at HL into C
+	MOV l, c	; Copy C to L
+	MVI h, 21h	; Load 21H into H
+	MOV m, b	; Store B into memory at HL (NUMBER[J] = TEMP)
+
+
+MainCondition: LDA i	; (i<j) [Load I into A]
+	LXI h, j	; Load address of J into HL
+	CMP m		; Compare A with value from memory at HL
+	JC MainWhile	; Jump to MainWhile if carry (A < M)
+
+;temp=number[pivot]
+
+	LXI h, pivot	; Load address of PIVOT into HL
+	MOV b, m	; Load value from memory at HL into B
+	MOV l, b	; Copy B to L
+	MVI h, 21h	; Load 21H into H
+	MOV b, m	;number[pivot]=b [Load value from memory at 21H into B (NUMBER[PIVOT])]
+	XCHG		;de= address of number[pivot] [Exchange DE and HL (DE now has address of NUMBER[PIVOT])]
+	LXI h, temp	; Load address of TEMP into HL
+	MOV m, b	;temp=number[pivot]  [Store B into memory at HL (TEMP = NUMBER[PIVOT])]
+
+;number[pivot]=number[j]
+
+	LXI h, j	; Load address of J into HL
+	MOV c, m	; Load value from memory at HL into C
+	MOV l, c	; Copy C to L
+	MVI h, 21h	; Load 21H into H
+	MOV c, m	;number[j]=c [Load value from memory at 21H into C (NUMBER[J])]
+	XCHG		;de=address of number[j]  [Exchange DE and HL (DE now has address of NUMBER[J])]
+	MOV m, c	;number[pivot]=number[j]  [Store C into memory at HL (NUMBER[PIVOT] = NUMBER[J])]
+
+;number[j]=temp
+
+	LXI h, temp	; Load address of TEMP into HL
+	MOV b, m	; Load value from memory at HL into B
+	XCHG		; Exchange DE and HL (DE now has address of NUMBER[J])
+	MOV m, b	;number[j]=temp  [Store B into memory at HL (NUMBER[J] = TEMP)]
+
+
+;quicksort recursive call(first,j-1)
+	LXI h, last	; Load address of LAST into HL
+	MOV b, m	; Load value from memory at HL into B
+	LXI h, j	; Load address of J into HL
+	MOV c, m	; Load value from memory at HL into C
+	PUSH b		; Push B onto the stack
+	DCR c		; Decrement C
+	LDA first	; Load FIRST into A
+	CALL quicksort	; Recursive call to QUICKSORT
+
+;quicksort recursive call(j+1,last)
+
+	POP b		; Pop value from the stack into B
+	MOV a, c	; Load C into A
+	INR a		; Increment A
+	MOV c, b	; Copy B to C
+	CALL quicksort	; Recursive call to QUICKSORT
+
+
+NOSORT: ret		; Return from the subroutine
+
